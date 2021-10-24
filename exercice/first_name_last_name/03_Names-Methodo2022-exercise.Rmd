@@ -1,15 +1,17 @@
 ---
-title: "French given names per year per department"
-author: "Lucas Mello Schnorr, Jean-Marc Vincent"
+title: "French given names exercise"
+author: "Benjamin Cathelineau"
 date: "October, 2021"
 output:
-  pdf_document: default
+  word_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(max.print = 10)
 ```
 
 ```{r}
@@ -18,70 +20,92 @@ library(tidyverse)
 library(ggplot2)
 version
 ```
-The aim of the activity is to develop a methodology to answer a specific question on a given dataset. 
-
-The dataset is the set of Firstname given in France on a large period of time. 
-[given names data set of INSEE](https://www.insee.fr/fr/statistiques/fichier/2540004), we choose this dataset because it is sufficiently large, you can't do the analysis by hand, the structure is simple
-
-
-You need to use the _tidyverse_ for this analysis. Unzip the file _dpt2019_txt.zip_ (to get the **dpt2019.csv**). Read in R with this code. Note that you might need to install the `readr` package with the appropriate command.
 
 ## Download Raw Data from the website
-```{r}
-file = "dpt2020_txt.zip"
-if(!file.exists(file)){
-  download.file("https://www.insee.fr/fr/statistiques/fichier/2540004/dpt2020_csv.zip",
-	destfile=file)
-}
-unzip(file)
-```
+
+File downloaded from [https://www.insee.fr/fr/statistiques/fichier/2540004/dpt2020_csv.zip](https://www.insee.fr/fr/statistiques/fichier/2540004/dpt2020_csv.zip)
 
 ## Build the Dataframe from file
+
+*I had to change the name of the file because it wasn't the correct one.*
 ```{r}
 FirstNames <- readr::read_delim("dpt2020.csv",delim=";")
 
 ```
-```{r}
-FirstNames
-```
-Translation in english of variables names: 
-sexe -> gender 
-preusuel (prénom usuel) -> Firstname
-annais (année de naissance) -> Birth year
-dpt (département) -> department (administrative area unit)
-nombre -> number
 
-All of these following questions may need a preliminary analysis of the data, feel free to present answers and justifications in your own order and structure your report as it should be for a scientific report.
 
-1. Choose a firstname and analyse its frequency along time. Compare several firstnames frequency
-```{r}
-# We can find all the different names wih this command
+# 1. Choose a firstname and analyse its frequency along time. Compare several first names frequency
+
+*First we can find all the different names using the following command. This will group all the entries by * ***preusel***
+
+```{r }
 table(FirstNames$preusuel)
 ```
-```{r}
-# With this command, we can see which name occurs more often
+
+*Then, using the following* ***dplyr*** *pipeline we can see the one that occurs the most often.*
+
+```{r }
 library(dplyr)
 FirstNames %>% count(preusuel) %>% arrange(desc(n)) 
 
 ```
 
-```{r}
+*We just have to divide each "count" by the total in order to find the * ***frequency*** *for that we use * ***mutate.*** *We also* ***group_by*** *year*.
+
+```{r }
+library(dplyr)
+frequencies=FirstNames %>% group_by(annais) %>%count(preusuel) %>% arrange(desc(n)) %>% mutate(frequency=n/nrow(FirstNames)) 
+frequencies
+```
+
+*THe following command gives the frequency* ***by year*** *for a single name*
+
+```{r }
+frequencies_benjamin=frequencies %>% filter(preusuel=="BENJAMIN")
+plot(frequencies_benjamin$annais,frequencies_benjamin$frequency )
+```
+
+*We can even check our result with* ***sum*** *which should be equal to 1*
+```{r }
 # To get the frequency
 library(dplyr)
-FirstNames %>% count(preusuel) %>% arrange(desc(n)) %>% mutate(frequency=n/3727553) # todo remove hardcoding of total
-
+sum( frequencies$frequency)
 ```
 
 
-2. Establish, by gender, the most given firstname by year. 
-```{r}
-# To get the frequency
-library(dplyr)
-FirstNames %>% group_by(sexe,annais) %>% filter(nombre==max(nombre)) 
 
+# 2. Establish, by gender, the most given firstname by year. 
+
+*We use* ***group by*** *for that, and* ***filter*** *to only keep the maximum*
+```{r }
+library(dplyr)
+most_given_by_year_and_gender=FirstNames %>% group_by(sexe,annais) %>% filter(nombre==max(nombre)) 
+
+ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais) & as.numeric( annais) <=2010 ), aes(x=annais, y=nombre, shape = factor(sexe), color = preusuel))+geom_point()
 ```
+
+
 
 3. Make a short synthesis
-4. Advanced (not mandatory) : is the firstname correlated with the localization (department) ? What could be a method to analyze such a correlation.
 
-The report should be a pdf knitted from a  notebook (around  3 pages including figures), the notebook and the report should be delivered.
+*There is definitively something strange going on with this data, specifically with the entries "_PRENOMS_RARES", which could be translated to rare First names.*
+
+*Indeed theses entries dominate in term of frequency, be it in the total, or even when grouping by gender and year*
+
+*I'm not sure what rare first name exactly means when there are many other rare first name, that is names that occur no more than once* 
+
+*In my opinion theses name are also rare and should be in the "_PRENOMS_RARES" category* TODO
+ 
+
+
+*Finally, we can say that some name are used both for men and women, so it's something to keep in mind*
+
+*For example the name CAMILLE is given almost equally for men and women*
+```{r }
+library(dplyr)
+total_women= FirstNames %>% filter(preusuel == 'CAMILLE') %>% filter(sexe == 2)
+total_men=FirstNames %>% filter(preusuel == 'CAMILLE') %>% filter(sexe == 1)
+nrow(total_men)
+nrow(total_women)
+```
+

@@ -76,12 +76,13 @@ sum( frequencies$frequency)
 
 # 2. Establish, by gender, the most given firstname by year. 
 
-*We use* ***group by*** *for that, and* ***filter*** *to only keep the maximum*
+*We use* ***group by*** *for that, and* ***filter*** *to only keep the maximum. We also remove the "_PRENOMS_RARES" category because it actually regroups all rares names*
+
 ```{r }
 library(dplyr)
-most_given_by_year_and_gender=FirstNames %>% group_by(sexe,annais) %>% filter(nombre==max(nombre)) 
+most_given_by_year_and_gender=FirstNames %>% filter( preusuel != "_PRENOMS_RARES") %>%  group_by(sexe,annais) %>%filter(nombre==max(nombre) ) 
 
-ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais) & as.numeric( annais) <=2010 ), aes(x=annais, y=nombre, shape = factor(sexe), color = preusuel))+geom_point()
+ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais) & as.numeric( annais) <=2010 ), aes(x=annais, y=nombre, shape = factor(sexe), color = factor(preusuel)))+geom_point()
 ```
 
 
@@ -98,7 +99,7 @@ ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais)
  
 
 
-*Finally, we can say that some name are used both for men and women, so it's something to keep in mind*
+*Finally, we can say that some name are used both for men and women, so it's something to keep in mind. If we group those data*
 
 *For example the name CAMILLE is given almost equally for men and women*
 ```{r }

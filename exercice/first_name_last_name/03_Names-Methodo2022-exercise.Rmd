@@ -3,14 +3,14 @@ title: "French given names exercise"
 author: "Benjamin Cathelineau"
 date: "October, 2021"
 output:
-  word_document: default
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 options(max.print = 10)
 ```
 
@@ -18,7 +18,6 @@ options(max.print = 10)
 # The environment
 library(tidyverse)
 library(ggplot2)
-version
 ```
 
 ## Download Raw Data from the website
@@ -82,24 +81,34 @@ sum( frequencies$frequency)
 library(dplyr)
 most_given_by_year_and_gender=FirstNames %>% filter( preusuel != "_PRENOMS_RARES") %>%  group_by(sexe,annais) %>%filter(nombre==max(nombre) ) 
 
-ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais) & as.numeric( annais) <=2010 ), aes(x=annais, y=nombre, shape = factor(sexe), color = factor(preusuel)))+geom_point()
+ggplot(data = most_given_by_year_and_gender %>% filter(1999<=as.numeric( annais) & as.numeric( annais) <=2010 ), aes(x=annais, y=nombre, shape = factor(sexe), color = factor(preusuel)))+geom_point() # inspired by https://github.com/ElaissaouiSouad/-smpe_labs/blob/main/first_NAMES.Rmd
 ```
 
 
 
-3. Make a short synthesis
+# 3. Make a short synthesis
 
-*There is definitively something strange going on with this data, specifically with the entries "_PRENOMS_RARES", which could be translated to rare First names.*
+*There is definitively something strange going on with this data, specifically with the entries prenoms rares, which could be translated to rare First names.*
 
 *Indeed theses entries dominate in term of frequency, be it in the total, or even when grouping by gender and year*
 
 *I'm not sure what rare first name exactly means when there are many other rare first name, that is names that occur no more than once* 
 
-*In my opinion theses name are also rare and should be in the "_PRENOMS_RARES" category* TODO
+*In my opinion theses name are also rare and should be in the prenoms rares category* 
  
+```{r }
+library(dplyr) 
+# https://community.rstudio.com/t/how-do-i-generate-a-count-in-r-within-mutate/64655
+counted_data= FirstNames %>% group_by(preusuel) %>%mutate (count_preusuel =n())
+mutated_rare_name=counted_data %>% filter(count_preusuel==1) %>% mutate(preusuel="_PRENOMS_RARES")
+no_new_rare_name = counted_data %>% filter(count_preusuel>1)
+final_data=rbind(mutated_rare_name,no_new_rare_name)
+final_data
+```
 
+*I tried to do it but it was quite complicated and I think I lost the information for* ***annais*** *and* ***dpt*** *because of the* ***group_by*** *but I'm not sure*
 
-*Finally, we can say that some name are used both for men and women, so it's something to keep in mind. If we group those data*
+*Finally, we can say that some name are used both for men and women, so it's something to keep in mind.*
 
 *For example the name CAMILLE is given almost equally for men and women*
 ```{r }

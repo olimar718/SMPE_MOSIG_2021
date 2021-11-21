@@ -1,0 +1,18 @@
+---
+title: "Around Simpson's Paradox"
+author: "Benjamin Cathelineau"
+date: "21/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The first study was carried in 1977, the second study in 1995.
+
+```{r}
+library(dplyr)
+df = read.csv("Subject6_smoking.csv")
+df %>% filter(Status == "Alive") %>% arrange(Age)
+```

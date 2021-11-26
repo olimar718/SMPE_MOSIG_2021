@@ -7,12 +7,111 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
 ```
 
+# Introduction
 The first study was carried in 1977, the second study in 1995.
 
+
+# Question 1 
+TODO pie chart
+TODO confidence interval on the mortality ratio
+
 ```{r}
-library(dplyr)
+
+
 df = read.csv("Subject6_smoking.csv")
-df %>% filter(Status == "Alive") %>% arrange(Age)
+compute_mortality_ratio <- function(smoker_arg,df_arg, title_arg){
+  nb_alive= df_arg %>% filter(Status == "Alive" & Smoker== smoker_arg) %>% nrow()
+  nb_dead= df_arg %>% filter(Status == "Dead" & Smoker== smoker_arg) %>% nrow()
+  
+  
+  df <- data.frame(
+  group = c("Alive", "Dead"),
+  value = c(nb_alive,nb_dead)
+  )
+  
+  bp<- ggplot(df, aes(x="", y=value, fill=group))+
+  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) + coord_polar("y", start=0)
+  print(bp)
+  
+  
+  nb_dead / (nb_alive+nb_dead) # divide the number of dead by the total, the total being the addition of dead and alive
+}
+
+
+compute_smoker_ratio <- function(df_arg, title_arg){
+  nb_smoker= df_arg %>% filter(Smoker== "Yes") %>% nrow()
+  nb_non_smoker= df_arg %>% filter(Smoker== "No") %>% nrow()
+  
+  
+  df <- data.frame(
+  group = c("Smoker", "Non Smoker"),
+  value = c(nb_smoker,nb_non_smoker)
+  )
+  
+  bp<- ggplot(df, aes(x="", y=value, fill=group))+
+  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) +coord_polar("y", start=0)
+  print(bp)
+  
+  
+  nb_smoker / (nb_smoker+nb_non_smoker) # divide the number of dead by the total, the total being the addition of dead and alive
+}
+
+
+
 ```
+We declare a function so that we can` compute both rates (for smokers and non smokers), without repeating our code
+
+```{r}
+compute_mortality_ratio(smoker_arg = "Yes", df_arg =df,title_arg = "All smokers" )
+
+```
+The rate for the smoker group 
+
+```{r}
+compute_mortality_ratio(smoker_arg = "No", df_arg =df, title_arg = "All non smokers")
+
+```
+The rate for the non smoking group 
+
+
+The mortality rate is significantly higher for the group that is not smoking. In other words, in with this data, a woman who smoked in 1977 is less likely to have died in 1995 than a woman who did not smoke in 1977. 
+
+Of course, this is very surprising because it is now known that smoking cigarette increases the risk of death, trough various mechanisms, such as increased risk of cancer and cardiovascular disease. For more details, consult the relevant [wikipedia](https://en.wikipedia.org/wiki/Health_effects_of_tobacco) article.
+
+# Question 2
+We will use the recommended age grouping.
+```{r}
+class1834 = df %>% filter(Age >= 18 & Age < 34)
+class3454 = df %>% filter(Age >= 34 & Age < 54)
+class5464 = df %>% filter(Age >= 54 & Age < 64)
+class64 = df %>% filter(Age >= 64)
+compute_mortality_ratio(smoker_arg = "Yes", df_arg = class1834,title_arg = "18 34 age class, smokers")
+compute_mortality_ratio(smoker_arg = "No", df_arg = class1834,title_arg = "18 34 age class, non smokers")
+compute_mortality_ratio(smoker_arg = "Yes", df_arg = class3454,title_arg = "34 54 age class, smokers")
+compute_mortality_ratio(smoker_arg = "No", df_arg = class3454,title_arg = "34 54 age class, non smokers")
+compute_mortality_ratio(smoker_arg = "Yes", df_arg = class5464,title_arg = "54 64 age class, smokers")
+compute_mortality_ratio(smoker_arg = "No", df_arg = class5464,title_arg = "54 64 age class, non smokers")
+compute_mortality_ratio(smoker_arg = "Yes", df_arg = class64,title_arg = " 64 + age class, smokers")
+compute_mortality_ratio(smoker_arg = "No", df_arg = class64,title_arg = "64 + age class, non smokers")
+```
+This is very surprising, because, as we saw in question 1, the mortality rate was higher for *non smoker*. But now, after organizing the data in age classes, for every single class, the mortality is higher for the *smoker* group. So there is seemingly direct contradiction.
+
+## What is happening
+I develop a function to compute to ratio of somker in a given age class
+```{r}
+compute_smoker_ratio(df_arg = class1834, title_arg = "")
+compute_smoker_ratio(df_arg = class3454, title_arg = "")
+compute_smoker_ratio(df_arg = class5464, title_arg = "")
+compute_smoker_ratio(df_arg = class64,title_arg = "" )
+```
+This is the Simpson paradox,
+Age is more important to your health than smoking 
+[relevant youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=908s)
+
+# Question 3
+
+# Conclusion

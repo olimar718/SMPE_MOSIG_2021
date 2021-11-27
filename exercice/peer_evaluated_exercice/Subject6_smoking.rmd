@@ -9,6 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
+library(Rmisc)
 ```
 
 # Introduction
@@ -23,6 +24,7 @@ TODO confidence interval on the mortality ratio
 
 
 df = read.csv("Subject6_smoking.csv")
+# Compute the ration of dead for 
 compute_mortality_ratio <- function(smoker_arg,df_arg, title_arg){
   nb_alive= df_arg %>% filter(Status == "Alive" & Smoker== smoker_arg) %>% nrow()
   nb_dead= df_arg %>% filter(Status == "Dead" & Smoker== smoker_arg) %>% nrow()
@@ -40,40 +42,27 @@ compute_mortality_ratio <- function(smoker_arg,df_arg, title_arg){
   
   nb_dead / (nb_alive+nb_dead) # divide the number of dead by the total, the total being the addition of dead and alive
 }
-
-
-compute_smoker_ratio <- function(df_arg, title_arg){
-  nb_smoker= df_arg %>% filter(Smoker== "Yes") %>% nrow()
-  nb_non_smoker= df_arg %>% filter(Smoker== "No") %>% nrow()
-  
-  
-  df <- data.frame(
-  group = c("Smoker", "Non Smoker"),
-  value = c(nb_smoker,nb_non_smoker)
-  )
-  
-  bp<- ggplot(df, aes(x="", y=value, fill=group))+
-  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) +coord_polar("y", start=0)
-  print(bp)
-  
-  
-  nb_smoker / (nb_smoker+nb_non_smoker) # divide the number of dead by the total, the total being the addition of dead and alive
+compute_confidence_interval <- function(smoker_arg,df_arg){
+  alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(value=0)
+  dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(value=1)
+  all_member = rbind(alives,dead)
+  mean(all_member$value)
+  CI(x=all_member$value,ci=0.95)
 }
 
 
-
 ```
-We declare a function so that we can` compute both rates (for smokers and non smokers), without repeating our code
+We declare a function so that we can compute both rates (for smokers and non smokers), without repeating our code
 
 ```{r}
 compute_mortality_ratio(smoker_arg = "Yes", df_arg =df,title_arg = "All smokers" )
-
+compute_confidence_interval(smoker_arg="Yes",df_arg = df)
 ```
 The rate for the smoker group 
 
 ```{r}
 compute_mortality_ratio(smoker_arg = "No", df_arg =df, title_arg = "All non smokers")
-
+compute_confidence_interval(smoker_arg="No",df_arg = df)
 ```
 The rate for the non smoking group 
 
@@ -101,8 +90,25 @@ compute_mortality_ratio(smoker_arg = "No", df_arg = class64,title_arg = "64 + ag
 This is very surprising, because, as we saw in question 1, the mortality rate was higher for *non smoker*. But now, after organizing the data in age classes, for every single class, the mortality is higher for the *smoker* group. So there is seemingly direct contradiction.
 
 ## What is happening
-I develop a function to compute to ratio of somker in a given age class
+I developed a function to compute to ratio of smoker in a given age class
 ```{r}
+compute_smoker_ratio <- function(df_arg, title_arg){
+  nb_smoker= df_arg %>% filter(Smoker== "Yes") %>% nrow()
+  nb_non_smoker= df_arg %>% filter(Smoker== "No") %>% nrow()
+  
+  
+  df <- data.frame(
+  group = c("Smoker", "Non Smoker"),
+  value = c(nb_smoker,nb_non_smoker)
+  )
+  
+  bp<- ggplot(df, aes(x="", y=value, fill=group))+
+  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) +coord_polar("y", start=0)
+  print(bp)
+  
+  
+  nb_smoker / (nb_smoker+nb_non_smoker) # divide the number of dead by the total, the total being the addition of dead and alive
+}
 compute_smoker_ratio(df_arg = class1834, title_arg = "")
 compute_smoker_ratio(df_arg = class3454, title_arg = "")
 compute_smoker_ratio(df_arg = class5464, title_arg = "")

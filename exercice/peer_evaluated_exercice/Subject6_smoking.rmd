@@ -46,7 +46,6 @@ compute_confidence_interval <- function(smoker_arg,df_arg){
   alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(value=0)
   dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(value=1)
   all_member = rbind(alives,dead)
-  mean(all_member$value)
   CI(x=all_member$value,ci=0.95)
 }
 
@@ -78,14 +77,20 @@ class1834 = df %>% filter(Age >= 18 & Age < 34)
 class3454 = df %>% filter(Age >= 34 & Age < 54)
 class5464 = df %>% filter(Age >= 54 & Age < 64)
 class64 = df %>% filter(Age >= 64)
-compute_mortality_ratio(smoker_arg = "Yes", df_arg = class1834,title_arg = "18 34 age class, smokers")
-compute_mortality_ratio(smoker_arg = "No", df_arg = class1834,title_arg = "18 34 age class, non smokers")
-compute_mortality_ratio(smoker_arg = "Yes", df_arg = class3454,title_arg = "34 54 age class, smokers")
-compute_mortality_ratio(smoker_arg = "No", df_arg = class3454,title_arg = "34 54 age class, non smokers")
-compute_mortality_ratio(smoker_arg = "Yes", df_arg = class5464,title_arg = "54 64 age class, smokers")
-compute_mortality_ratio(smoker_arg = "No", df_arg = class5464,title_arg = "54 64 age class, non smokers")
-compute_mortality_ratio(smoker_arg = "Yes", df_arg = class64,title_arg = " 64 + age class, smokers")
-compute_mortality_ratio(smoker_arg = "No", df_arg = class64,title_arg = "64 + age class, non smokers")
+
+mortality_ratio_and_ci <- function(df_arg, title_arg){
+compute_mortality_ratio(smoker_arg = "Yes", df_arg = df_arg,title_arg = paste(title_arg,"smokers"))
+compute_confidence_interval(smoker_arg="Yes",df_arg = df_arg)
+
+compute_mortality_ratio(smoker_arg = "No", df_arg = df_arg,title_arg = paste(title_arg,"non smokers"))
+compute_confidence_interval(smoker_arg="No",df_arg = df_arg)
+}
+
+mortality_ratio_and_ci(class1834,"18 34 age class")
+mortality_ratio_and_ci(class3454,"34 54 age class")
+mortality_ratio_and_ci(class5464,"54 64 age class")
+mortality_ratio_and_ci(class64,"64 + age class")
+
 ```
 This is very surprising, because, as we saw in question 1, the mortality rate was higher for *non smoker*. But now, after organizing the data in age classes, for every single class, the mortality is higher for the *smoker* group. So there is seemingly direct contradiction.
 

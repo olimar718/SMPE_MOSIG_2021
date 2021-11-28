@@ -46,6 +46,7 @@ compute_confidence_interval <- function(smoker_arg,df_arg){
   alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(value=0)
   dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(value=1)
   all_member = rbind(alives,dead)
+  # QUESTION for the professor Sample variance * 4 ??
   CI(x=all_member$value,ci=0.95)
 }
 
@@ -95,8 +96,11 @@ mortality_ratio_and_ci(class64,"64 + age class")
 This is very surprising, because, as we saw in question 1, the mortality rate was higher for *non smoker*. But now, after organizing the data in age classes, for every single class, the mortality is higher for the *smoker* group. So there is seemingly direct contradiction.
 
 ## What is happening
+To figure out what is happening, we need more information. Currently, we have the global death ratio for smoker and non smoker. We also have the death ratio for separate age class, and that's where we find a contradiction.
+An interesting information to have would be the ratio of smoker, especially in separate age class because we might find that people of different age have different smoking habit.
 I developed a function to compute to ratio of smoker in a given age class
 ```{r}
+# TODO confidence interval here as well ?
 compute_smoker_ratio <- function(df_arg, title_arg){
   nb_smoker= df_arg %>% filter(Smoker== "Yes") %>% nrow()
   nb_non_smoker= df_arg %>% filter(Smoker== "No") %>% nrow()
@@ -114,10 +118,11 @@ compute_smoker_ratio <- function(df_arg, title_arg){
   
   nb_smoker / (nb_smoker+nb_non_smoker) # divide the number of dead by the total, the total being the addition of dead and alive
 }
-compute_smoker_ratio(df_arg = class1834, title_arg = "")
-compute_smoker_ratio(df_arg = class3454, title_arg = "")
-compute_smoker_ratio(df_arg = class5464, title_arg = "")
-compute_smoker_ratio(df_arg = class64,title_arg = "" )
+compute_smoker_ratio(df_arg = df, title_arg = "global ratio of smoker")
+compute_smoker_ratio(df_arg = class1834, title_arg = "Ratio of smoker 18 to 34")
+compute_smoker_ratio(df_arg = class3454, title_arg = "Ratio of smoker 34 to 54")
+compute_smoker_ratio(df_arg = class5464, title_arg = "Ratio of smoker 54 to 64")
+compute_smoker_ratio(df_arg = class64,title_arg = "Ratio of smoker 64 +" )
 ```
 This is the Simpson paradox,
 Age is more important to your health than smoking 

@@ -43,11 +43,11 @@ compute_mortality_ratio <- function(smoker_arg,df_arg, title_arg){
   nb_dead / (nb_alive+nb_dead) # divide the number of dead by the total, the total being the addition of dead and alive
 }
 compute_confidence_interval <- function(smoker_arg,df_arg){
-  alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(value=0)
-  dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(value=1)
+  alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(death_variable=0)
+  dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(death_variable=1)
   all_member = rbind(alives,dead)
   # QUESTION for the professor Sample variance * 4 ??
-  CI(x=all_member$value,ci=0.95)
+  CI(x=all_member$death_variable,ci=0.95)
 }
 
 
@@ -98,7 +98,7 @@ This is very surprising, because, as we saw in question 1, the mortality rate wa
 ## What is happening
 To figure out what is happening, we need more information. Currently, we have the global death ratio for smoker and non smoker. We also have the death ratio for separate age class, and that's where we find a contradiction.
 An interesting information to have would be the ratio of smoker, especially in separate age class because we might find that people of different age have different smoking habit.
-I developed a function to compute to ratio of smoker in a given age class
+I developed a function to compute to ratio of smoker.
 ```{r}
 # TODO confidence interval here as well ?
 compute_smoker_ratio <- function(df_arg, title_arg){
@@ -124,10 +124,25 @@ compute_smoker_ratio(df_arg = class3454, title_arg = "Ratio of smoker 34 to 54")
 compute_smoker_ratio(df_arg = class5464, title_arg = "Ratio of smoker 54 to 64")
 compute_smoker_ratio(df_arg = class64,title_arg = "Ratio of smoker 64 +" )
 ```
-This is the Simpson paradox,
-Age is more important to your health than smoking 
-[relevant youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=908s)
+It is immediately apparent that the oldest age class smokes much less than all the other age classes.
+
+Given this, I can give a tentative explanation of what is going on: 
+- Age is, as far as I know, the most important factor in increasing the probability of death, in the general population. 
+- People of older age are therefore, everything else being equal, much more likely to die.
+
+- In this study it is revealed that older people (in the 64 + age class), are much less likely to be smokers than the younger age classes.
+- However, due to their age, they are much more likely to die than the younger age classes.
+
+The age classes are not exactly the same size but they are all in the same order of magnitude.
+
+And that's why we see this effect. Old people are much more likely to die in the first place.
+
+The conclusion is that Age is more important to your health than smoking, even if smoking is still very important and should be avoided for a good health.
+
+According to this [youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=908s) that I watched recently, the same phenomena will most likely occur at some point with the covid 19 vaccine. The vaccine lowers the risk of death from covid 19 (lower risk of infection and lower risk of death when infected). But since older people are more vaccinated and much more likely to die in the first place, we might see a negative association between the vaccine and covid 19 protection. In other words, unvaccinated people will have less probability of dying of covid 19 than vaccinated people, even if the vaccine is effective in protecting people. That is, again,because older people are much more likely to die in the first place, and they are more vaccinated than younger people.
 
 # Question 3
+
+
 
 # Conclusion

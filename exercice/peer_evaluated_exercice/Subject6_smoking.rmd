@@ -13,12 +13,11 @@ library(Rmisc)
 ```
 
 # Introduction
-The first study was carried in 1977, the second study in 1995.
+This work is not finished.
 
 
 # Question 1 
-TODO pie chart
-TODO confidence interval on the mortality ratio
+TODO confidence interval on the chart.
 
 ```{r}
 

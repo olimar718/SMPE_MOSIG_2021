@@ -3,6 +3,7 @@ title: "Around Simpson's Paradox"
 author: "Benjamin Cathelineau"
 date: "21/11/2021"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}

@@ -18,36 +18,24 @@ This work is not finished.
 
 
 # Question 1 
-TODO confidence interval on the chart.
 
 ```{r}
 
 
 df = read.csv("Subject6_smoking.csv")
-# Compute the ration of dead for 
-compute_mortality_ratio <- function(smoker_arg,df_arg, title_arg){
-  nb_alive= df_arg %>% filter(Status == "Alive" & Smoker== smoker_arg) %>% nrow()
-  nb_dead= df_arg %>% filter(Status == "Dead" & Smoker== smoker_arg) %>% nrow()
-  
-  
-  df <- data.frame(
-  group = c("Alive", "Dead"),
-  value = c(nb_alive,nb_dead)
-  )
-  
-  bp<- ggplot(df, aes(x="", y=value, fill=group))+
-  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) + coord_polar("y", start=0)
-  print(bp)
-  
-  
-  nb_dead / (nb_alive+nb_dead) # divide the number of dead by the total, the total being the addition of dead and alive
-}
-compute_confidence_interval <- function(smoker_arg,df_arg){
+
+
+compute_confidence_interval_and_plot <- function(smoker_arg,df_arg, title_arg){
   alives= df_arg %>% filter(Status == "Alive"& Smoker== smoker_arg) %>% mutate(death_variable=0)
   dead= df_arg %>% filter(Status == "Dead"& Smoker== smoker_arg) %>% mutate(death_variable=1)
   all_member = rbind(alives,dead)
-  # QUESTION for the professor Sample variance * 4 ??
-  CI(x=all_member$death_variable,ci=0.95)
+
+  my_ci= CI(x=all_member$death_variable,ci=0.95)
+  # inspired by https://app-learninglab.inria.fr/moocrr/gitlab/moocrr-session3/moocrr-reproducibility-study/blob/master/module3/exercice3/paradoxe_de_simpson_par_EC30.Rmd
+  death_rate<-c(my_ci[2])
+  label <- c(paste("ci |u| |m| |d|",toString(my_ci)))
+  bp<-barplot(death_rate,col="orange",ylim=c(0,1),names.arg=label, main=title_arg); box()
+  arrows(bp,my_ci[1],bp,my_ci[3],lwd=1.5,angle=90,length=0.1,code=3)
 }
 
 
@@ -55,14 +43,12 @@ compute_confidence_interval <- function(smoker_arg,df_arg){
 We declare a function so that we can compute both rates (for smokers and non smokers), without repeating our code
 
 ```{r}
-compute_mortality_ratio(smoker_arg = "Yes", df_arg =df,title_arg = "All smokers" )
-compute_confidence_interval(smoker_arg="Yes",df_arg = df)
+compute_confidence_interval_and_plot(smoker_arg="Yes",df_arg = df, title_arg="All smokers death rate")
 ```
 The rate for the smoker group 
 
 ```{r}
-compute_mortality_ratio(smoker_arg = "No", df_arg =df, title_arg = "All non smokers")
-compute_confidence_interval(smoker_arg="No",df_arg = df)
+compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df, title_arg="All non smokers death rate")
 ```
 The rate for the non smoking group 
 
@@ -80,11 +66,9 @@ class5464 = df %>% filter(Age >= 54 & Age < 64)
 class64 = df %>% filter(Age >= 64)
 
 mortality_ratio_and_ci <- function(df_arg, title_arg){
-compute_mortality_ratio(smoker_arg = "Yes", df_arg = df_arg,title_arg = paste(title_arg,"smokers"))
-compute_confidence_interval(smoker_arg="Yes",df_arg = df_arg)
+compute_confidence_interval_and_plot(smoker_arg="Yes",df_arg = df_arg, title_arg = paste(title_arg,"smokers"))
+compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df_arg, title_arg = paste(title_arg,"non smokers"))
 
-compute_mortality_ratio(smoker_arg = "No", df_arg = df_arg,title_arg = paste(title_arg,"non smokers"))
-compute_confidence_interval(smoker_arg="No",df_arg = df_arg)
 }
 
 mortality_ratio_and_ci(class1834,"18 34 age class")
@@ -102,22 +86,21 @@ I developed a function to compute to ratio of smoker.
 ```{r}
 # TODO confidence interval here as well ?
 compute_smoker_ratio <- function(df_arg, title_arg){
-  nb_smoker= df_arg %>% filter(Smoker== "Yes") %>% nrow()
-  nb_non_smoker= df_arg %>% filter(Smoker== "No") %>% nrow()
+  smokers= df_arg %>% filter( Smoker== "Yes") %>% mutate(smoker_variable=1)
+  non_smokers= df_arg %>% filter(Smoker== "No") %>% mutate(smoker_variable=0)
+  all_member = rbind(smokers,non_smokers)
+
+  my_ci= CI(x=all_member$smoker_variable,ci=0.95)
+  # inspired by https://app-learninglab.inria.fr/moocrr/gitlab/moocrr-session3/moocrr-reproducibility-study/blob/master/module3/exercice3/paradoxe_de_simpson_par_EC30.Rmd
+  smoker_rate<-c(my_ci[2])
+  label <- c(paste("ci |u| |m| |d|",toString(my_ci)))
+  bp<-barplot(smoker_rate,col="orange",ylim=c(0,1),names.arg=label, main=title_arg); box()
+  arrows(bp,my_ci[1],bp,my_ci[3],lwd=1.5,angle=90,length=0.1,code=3)
+
   
   
-  df <- data.frame(
-  group = c("Smoker", "Non Smoker"),
-  value = c(nb_smoker,nb_non_smoker)
-  )
-  
-  bp<- ggplot(df, aes(x="", y=value, fill=group))+
-  geom_bar(width = 1, stat = "identity") + ggtitle(title_arg) +coord_polar("y", start=0)
-  print(bp)
-  
-  
-  nb_smoker / (nb_smoker+nb_non_smoker) # divide the number of dead by the total, the total being the addition of dead and alive
 }
+
 compute_smoker_ratio(df_arg = df, title_arg = "global ratio of smoker")
 compute_smoker_ratio(df_arg = class1834, title_arg = "Ratio of smoker 18 to 34")
 compute_smoker_ratio(df_arg = class3454, title_arg = "Ratio of smoker 34 to 54")
@@ -142,6 +125,10 @@ The conclusion is that Age is more important to your health than smoking, even i
 According to this [youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=908s) that I watched recently, the same phenomena will most likely occur at some point with the covid 19 vaccine. The vaccine lowers the risk of death from covid 19 (lower risk of infection and lower risk of death when infected). But since older people are more vaccinated and much more likely to die in the first place, we might see a negative association between the vaccine and covid 19 protection. In other words, unvaccinated people will have less probability of dying of covid 19 than vaccinated people, even if the vaccine is effective in protecting people. That is, again,because older people are much more likely to die in the first place, and they are more vaccinated than younger people.
 
 # Question 3
+```{r}
+
+
+```
 
 
 

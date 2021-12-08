@@ -128,6 +128,16 @@ According to this [youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=
 ```{r}
 
 
+smokers= df %>% filter( Status== "Dead") %>% mutate(death_variabe=1)
+non_smokers= df %>% filter(Status== "Alive") %>% mutate(death_variabe=0)
+all_member = rbind(smokers,non_smokers)
+all_smokers = all_member %>% filter(Smoker == "Yes")
+
+regression = glm(all_smokers$death_variabe~all_smokers$Age,family = binomial(link = logit))
+regression
+
+exp(cbind(coef(regression), confint(regression)))
+
 ```
 
 

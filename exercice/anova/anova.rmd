@@ -1,0 +1,43 @@
+---
+title: "Anova"
+author: "Benjamin Cathelineau"
+date: "09/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import the data
+
+
+
+```{r }
+library(ggplot2)
+ble <- read.table("ble.txt",header=TRUE,sep=";",dec=".")
+ble
+```
+# Perform 1 factor ANOVA
+```{r}
+ggplot(ble, aes(x=variete,y=rdt))+
+  geom_boxplot()+
+  ggtitle("Whisker boxes")+
+  xlab("")+
+  ylab("")
+```
+```{r}
+ggplot(ble, aes(x=phyto,y=rdt))+
+  geom_boxplot()+
+  ggtitle("Whisker boxes")+
+  xlab("")+
+  ylab("")
+```
+
+# Perform 2 factor ANOVA
+```{r}
+anova_variete_phyto <- lm(rdt~variete*phyto,data=ble)
+summary(anova_variete_phyto)
+anova(anova_variete_phyto)
+```
+

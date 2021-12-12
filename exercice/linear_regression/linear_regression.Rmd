@@ -1,0 +1,73 @@
+---
+title: "Linear Regression"
+author: "Benjamin Cathelineau"
+date: "02/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load data
+
+```{r}
+myData=read.table(file = "arbres-tot.csv", sep = ";",skip = 3,header = TRUE)
+myData = myData[myData$X10 !=0,]
+```
+
+
+# Simple regression
+
+```{r}
+library(ggplot2)
+circ = myData$X70
+height= myData$X10
+
+ggplot2::ggplot(myData, aes(x=circ,y=height)) + geom_point()+xlab("circ") + ylab("height") + geom_smooth(method = "lm",se=TRUE)
+
+simple_reg <-lm(height~circ,data=myData)
+
+names(simple_reg)
+
+anova(simple_reg)
+
+summary(simple_reg)
+
+acf(residuals(simple_reg))
+
+plot(simple_reg,2)
+
+plot(simple_reg$residuals)
+
+plot(simple_reg,3)
+
+plot(simple_reg,1)
+
+plot(simple_reg,4)
+
+```
+```{r}
+predict(simple_reg, data.frame(circ=55),interval = "prediction")
+
+```
+
+# Multivariate regression
+```{r}
+myData$circ_sqrt <- sqrt(myData$X70)
+multi_reg <- lm(height ~ circ_sqrt+circ, data =myData)
+summary(multi_reg)
+multi_reg2 <- lm(height ~ circ_sqrt, data =myData)
+summary(multi_reg2)
+
+circ_pred <- seq(0,175,len=1000)
+height_pred <- multi_reg2$coefficients[1] + multi_reg2$coefficients[2]*sqrt(circ_pred)
+fct_reg <- data.frame(circ_pred=circ_pred,height_pred=height_pred)
+ggplot()+geom_point(data = myData,aes(x=circ,y=height))+ geom_line(data=fct_reg,aes(x = circ_pred,y=height_pred),col="blue")+geom_smooth(method = "lm")+xlab("circ")+ylab("height")
+
+
+plot(multi_reg2)
+```
+
+
+

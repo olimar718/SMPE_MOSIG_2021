@@ -1,0 +1,160 @@
+---
+title: "batman"
+author: "Benjamin Cathelineau"
+date: "09/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Presentation
+
+
+```{r }
+myData <- read.table(file = "bats.csv",sep = ";",skip = 3,header = T)
+names(myData)
+```
+
+
+## Study of the relationship between brain weight and body masss
+
+### Brain mass, body mass relation in phytophagous
+
+```{r}
+phyto = myData[(myData$Diet==1),]
+```
+```{r}
+library(ggplot2)
+ggplot(phyto, aes(x=BOW,y=BRW))+
+  geom_point()+
+  ggtitle("Brain mass in function of body mass")+
+  xlab("Body mass grams")+
+  ylab("Brain mass miligrams")
+```
+
+### Linear regression
+
+```{r}
+regression=lm(BRW~BOW,data=phyto)
+regression
+```
+In mathematical form :
+$brw= 623.4 + 9\times bow$  
+```{r}
+summary(regression)
+```
+This model is of very high quality, the $p-values$ are very low for both the intercept and $bow$. $R^2$ is very close to one
+The $H0$ hypothesis is to test if the body mass has no impact on the brain weight. For $H0$ to be true the multiplicator, currenlty equal to 9 would need to be very close to $0$
+In other words, the relation between brain weight and body mass is very clear.
+### Analysis of variance
+```{r}
+anova(regression)
+```
+From this table we have additional information such as the sum of residual squares. This is the sum of the difference between the prediction (from the model) and the empirical values, each of theses value being squared.
+
+```{r}
+plot(regression$fitted.values,regression$residuals,xlab="Predicted",ylab="Residual")
+```
+Most of the point are concentrated in the [-500;0] residual, [0;1000] predicted region.
+From this graph, ignoring the outlier at 10000 predicted, it is apparent that our model tend to get smaller prediction slightly wrong in the small direction and larger prediction slightly wrong in the large direction. In other words, there seems to be some sort of pattern.
+
+We can also note that there is more individual of lower weight than of higher weight. In other words, the data is not balanced.
+
+```{r}
+plot(regression)
+```
+Now we remove the problematic individual "batman".
+```{r}
+
+phytobis=phyto[which(phyto$BRW<8000),]
+regressionbis=lm(BRW ~ BOW,data=phytobis)
+summary(regressionbis)
+```
+We obtain a very different model as soon as we remove batman.
+Now the mathematical formula looks like  $brw= 346.54 + 14.5\times bow$. This show that the batman had a massive impact on the model, which might makes us think that it is likely that the batman was an error in the data.
+
+```{r}
+par(mfcol=c(2,2))
+plot(regression)
+plot(regressionbis)
+```
+
+The validity plots look much better with the second model where the batman is removed. Notably, the Normal Q-Q fits a normal distribution almost perfectly, as opposed to before. The other plot look better as well, I don't understand them perfectly but they look shrinked for the most part.
+
+## Study of the contribution to the total weight of each part of the brain
+
+```{r}
+library(corrplot)
+phytoNum=phyto[,c(4:8)]
+mat.cor=cor(phytoNum)
+corrplot(mat.cor, type= "upper")
+```
+From this nice plot we see that all variable are perfectly correlated with themselves (which make sense). 
+
+More interestingly, we see the previously studied brain mass, body mass correlation. We also see a interesting olfactory zone volume (MOB), volume of the hipocampus (HIP) correlation.
+
+### Pearson tests
+```{r}
+cor.test(phyto$BRW,phyto$HIP)
+cor.test(phyto$BRW,phyto$MOB)
+cor.test(phyto$BRW,phyto$AUD)
+```
+The brain weight is highly correlated with the olfactory zone volume (MOB) and with the volume of the hipocampus (HIP) but not with the auditory part of the brain (AUD). As stated before, HIP and MOB are themselves correlated together, which explains that BRW is correlated with both.
+
+### Regression model
+
+```{r}
+regm=lm(BRW~AUD+MOB+HIP,data=phytobis)
+summary(regm)
+anova(regm)
+```
+$brw=-312.692+47,989\times aud+-2.444\times mob+15,981\times hip$
+
+From the ANOVA result we see that this model is of very high quality, as $R^2$ is close to $1$. Most coefficient of the model are good and reliable, at the exception of of MOB, which has a way to high p value, as well as a low coefficient (-2.444) which does not impact the model a lot. 
+
+### Removing higly correlated variable 
+
+An hypothesis to explain the fact that MOB is not well integrated in our model is that it is highly correlated with HIP, which is already a part of our model. HIP and MOB are collinear. 
+We can use the previously mentioned pearson test to check this:
+```{r}
+cor.test(phyto$MOB,phyto$HIP)
+```
+Theses 2 variables are indeed extremely correlated. 
+
+
+Therefore, we should remove one of them from the model.
+
+We can do a new linear regression without HIP. 
+```{r}
+regmbis=lm(BRW~AUD+MOB,data=phytobis)
+summary(regmbis)
+anova(regmbis)
+```
+Now we see that MOB is indeed relevant, which was hidden before by its collinearity with HIP.
+
+
+## The step command
+```{r}
+reg0=lm(BRW~1,data = phyto)
+step(reg0,scope = BRW ~AUD + MOB +HIP, direction = "forward")
+```
+This seems to be some sort of algorithm to select the best model.
+## Link between volum of the auditory part and diet
+
+```{r}
+myData$Diet_F = as.factor(myData$Diet)
+with(myData,plot(AUD~Diet))
+with(myData,plot(AUD~Diet_F))
+```
+I'm not sure, but I think we should a the first graph (with the points). The second graph is strange to me because it doesn't not take into account the number of points. If you look a diet 2 and diet 4 on graph 2 you might think that there is a very high chance than, if a bat has diet 4 then it will have a volume 10 AUD. However, there are only 2 points at diet number 4...
+### Regression analysis
+```{r}
+lm = lm(AUD~Diet_F,data=myData)
+summary(lm)
+anova(lm)
+```
+

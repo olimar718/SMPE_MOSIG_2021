@@ -47,9 +47,10 @@ $brw= 623.4 + 9\times bow$
 ```{r}
 summary(regression)
 ```
-This model is of very high quality, the $p-values$ are very low for both the intercept and $bow$. $R^2$ is very close to one
-The $H0$ hypothesis is to test if the body mass has no impact on the brain weight. For $H0$ to be true the multiplicator, currenlty equal to 9 would need to be very close to $0$
-In other words, the relation between brain weight and body mass is very clear.
+This model is of very high quality, the $p-values$ are very low for both the intercept and $bow$. $R^2$, the coefficient of determination, is very close to $1$, which is good. F-Statistic, $\frac{MSM}{MSE}$, is $513.4$, which is very large, which is good.
+The $H0$ hypothesis of this test is true if the body mass has no impact on the brain weight. For $H0$ to be true the $p-values$, would need to be closer to 1
+In other words, we can reject this hypothesis and the relation between brain weight and body mass is very clear.
+
 ### Analysis of variance
 ```{r}
 anova(regression)
@@ -65,9 +66,10 @@ From this graph, ignoring the outlier at 10000 predicted, it is apparent that ou
 We can also note that there is more individual of lower weight than of higher weight. In other words, the data is not balanced.
 
 ```{r}
+par(mfcol=c(2,2))
 plot(regression)
 ```
-Now we remove the problematic individual "batman".
+Now we remove the problematic individual "batman, which is individual number 7.
 ```{r}
 
 phytobis=phyto[which(phyto$BRW<8000),]
@@ -79,11 +81,10 @@ Now the mathematical formula looks like  $brw= 346.54 + 14.5\times bow$. This sh
 
 ```{r}
 par(mfcol=c(2,2))
-plot(regression)
 plot(regressionbis)
 ```
 
-The validity plots look much better with the second model where the batman is removed. Notably, the Normal Q-Q fits a normal distribution almost perfectly, as opposed to before. The other plot look better as well, I don't understand them perfectly but they look shrinked for the most part.
+The validity plots look much better with the second model where the batman is removed. Notably, the Normal Q-Q fits a normal distribution almost perfectly, as opposed to before. In other words, the errors follow a normal distribution. The other plot look better as well, I don't understand them perfectly but they look shrinked for the most part.
 
 ## Study of the contribution to the total weight of each part of the brain
 
@@ -140,9 +141,26 @@ Now we see that MOB is indeed relevant, which was hidden before by its collinear
 ## The step command
 ```{r}
 reg0=lm(BRW~1,data = phyto)
-step(reg0,scope = BRW ~AUD + MOB +HIP, direction = "forward")
+stepreg= step(reg0,scope = BRW ~AUD + MOB +HIP, direction = "forward")
+summary(stepreg)
 ```
-This seems to be some sort of algorithm to select the best model.
+This seems to be some sort of algorithm to select the best model. I read a detailed explanation [there](http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/154-stepwise-regression-essentials-in-r/).
+
+However, in my opinion, it's not working really well here:
+As we have previously shown MOB and HIP are collinear, and here it seems that the model is trying to cancel them out by putting a negative coefficient in front of MOB. It is my opinion that, because MOB is almost perfectly collinear with HIP, we should avoid having both in the model.
+
+We can retry the same command without HIP or without MOB:
+
+```{r}
+reg0=lm(BRW~1,data = phyto)
+stepreg2 = step(reg0,scope = BRW ~AUD + HIP , direction = "forward")
+summary(stepreg2)
+```
+```{r}
+reg0=lm(BRW~1,data = phyto)
+stepreg2 = step(reg0,scope = BRW ~AUD + MOB , direction = "forward")
+summary(stepreg2)
+```
 ## Link between volum of the auditory part and diet
 
 ```{r}
@@ -150,11 +168,35 @@ myData$Diet_F = as.factor(myData$Diet)
 with(myData,plot(AUD~Diet))
 with(myData,plot(AUD~Diet_F))
 ```
-I'm not sure, but I think we should a the first graph (with the points). The second graph is strange to me because it doesn't not take into account the number of points. If you look a diet 2 and diet 4 on graph 2 you might think that there is a very high chance than, if a bat has diet 4 then it will have a volume 10 AUD. However, there are only 2 points at diet number 4...
+I'm not sure, but I think we should a the first graph (with the points). The second graph is strange to me because it doesn't not take into account the number of points, so we don't know how confident we should be. If you look at diet 4 on graph 2 you might think that there is a very high chance than, if a bat has diet 4 then it will have a volume 10 AUD. However, there are only 2 points at diet number 4...
+
+Nonetheless the second graph add informations about the distributions, (quartiles and median), so maybe we should keep both ?
+
 ### Regression analysis
 ```{r}
 lm = lm(AUD~Diet_F,data=myData)
 summary(lm)
 anova(lm)
 ```
+It seems that there is no clear linear relation between the AUD volume and the diet. The Sum sq residuals is much higher than the Sum sq explained by the model. This is an indicator of a bad linear model. F-Statistic bellow 1 is also very bad. The analysis of variance also tells us that our model is not significant.
 
+We could conclude that our hypothesis is wrong, in other that insectivorous insect do not tend to have a larger AUD volume.
+
+However, I feel like we are ignoring something : the body weight What if insectivorous bats are smaller on average ? Then even if they have a large AUD volume for their size, it would still be smaller than the AUD volume of other species.
+
+To illustrate the idea let's consider an example:
+let's say that human A has 43 size feet (european sizing) and 150cm height. Human B has 45 size feet and 177cm height. Then, with the previous method we would conclude that human B has larger feet. But really, if we look at the ratio, we see that human A has exeptionnaly large feet.
+
+Therefore, what we really need to look at, in my opinion, is to ratio AUD volume to body weight. 
+
+```{r}
+library(dplyr)
+myData_with_ratio=myData %>% mutate(aud_to_bow_ratio=AUD/BOW) 
+
+plot(myData_with_ratio$Diet_F,myData_with_ratio$aud_to_bow_ratio)
+lmratio = lm(aud_to_bow_ratio~Diet_F,data=myData_with_ratio)
+summary(lmratio)
+anova(lmratio)
+
+```
+Now we see that the median AUD volume is much higher for diet type 3, which are the insectivorous bats. This time, the analysis of variance tells us that our model is significant.

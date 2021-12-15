@@ -33,8 +33,7 @@ compute_confidence_interval_and_plot <- function(smoker_arg,df_arg, title_arg){
   my_ci= CI(x=all_member$death_variable,ci=0.95)
   # inspired by https://app-learninglab.inria.fr/moocrr/gitlab/moocrr-session3/moocrr-reproducibility-study/blob/master/module3/exercice3/paradoxe_de_simpson_par_EC30.Rmd
   death_rate<-c(my_ci[2])
-  label <- c(paste("ci |u| |m| |d|",toString(my_ci)))
-  bp<-barplot(death_rate,col="orange",ylim=c(0,1),names.arg=label, main=title_arg); box()
+  bp<-barplot(death_rate,col="orange",ylim=c(0,1),names.arg=sprintf("0.95 CI: u=%.3f,m=%.3f,l= %.3f",my_ci[1],my_ci[2],my_ci[3]), main=title_arg); box()
   arrows(bp,my_ci[1],bp,my_ci[3],lwd=1.5,angle=90,length=0.1,code=3)
 }
 
@@ -43,15 +42,11 @@ compute_confidence_interval_and_plot <- function(smoker_arg,df_arg, title_arg){
 We declare a function so that we can compute both rates (for smokers and non smokers), without repeating our code
 
 ```{r}
+par(mfcol=c(1,2))
 compute_confidence_interval_and_plot(smoker_arg="Yes",df_arg = df, title_arg="All smokers death rate")
-```
-The rate for the smoker group 
-
-```{r}
 compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df, title_arg="All non smokers death rate")
-```
-The rate for the non smoking group 
 
+```
 
 The mortality rate is significantly higher for the group that is not smoking. In other words, in with this data, a woman who smoked in 1977 is less likely to have died in 1995 than a woman who did not smoke in 1977. 
 
@@ -67,9 +62,12 @@ class64 = df %>% filter(Age >= 64)
 
 mortality_ratio_and_ci <- function(df_arg, title_arg){
 compute_confidence_interval_and_plot(smoker_arg="Yes",df_arg = df_arg, title_arg = paste(title_arg,"smokers"))
-compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df_arg, title_arg = paste(title_arg,"non smokers"))
+compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df_arg, title_arg = paste(title_arg,"non"))
 
 }
+
+par(mfcol=c(2,4))
+
 
 mortality_ratio_and_ci(class1834,"18 34 age class")
 mortality_ratio_and_ci(class3454,"34 54 age class")
@@ -93,13 +91,13 @@ compute_smoker_ratio <- function(df_arg, title_arg){
   my_ci= CI(x=all_member$smoker_variable,ci=0.95)
   # inspired by https://app-learninglab.inria.fr/moocrr/gitlab/moocrr-session3/moocrr-reproducibility-study/blob/master/module3/exercice3/paradoxe_de_simpson_par_EC30.Rmd
   smoker_rate<-c(my_ci[2])
-  label <- c(paste("ci |u| |m| |d|",toString(my_ci)))
-  bp<-barplot(smoker_rate,col="orange",ylim=c(0,1),names.arg=label, main=title_arg); box()
+  bp<-barplot(smoker_rate,col="orange",ylim=c(0,1),names.arg=sprintf("0.95 CI: u=%.3f,m=%.3f,l= %.3f",my_ci[1],my_ci[2],my_ci[3]), main=title_arg); box()
   arrows(bp,my_ci[1],bp,my_ci[3],lwd=1.5,angle=90,length=0.1,code=3)
 
   
   
 }
+par(mfcol=c(2,3))
 
 compute_smoker_ratio(df_arg = df, title_arg = "global ratio of smoker")
 compute_smoker_ratio(df_arg = class1834, title_arg = "Ratio of smoker 18 to 34")
@@ -127,16 +125,33 @@ According to this [youtube video](https://www.youtube.com/watch?v=4Yoo_DX2Nt0&t=
 # Question 3
 ```{r}
 
-
-smokers= df %>% filter( Status== "Dead") %>% mutate(death_variabe=1)
-non_smokers= df %>% filter(Status== "Alive") %>% mutate(death_variabe=0)
-all_member = rbind(smokers,non_smokers)
+# inspired by https://gitlab.ensimag.fr/vaudeyj/mosig-smpe/-/blob/master/Peer%20evaluated%20exercise/PeerEvaluated.pdf
+dead= df %>% filter( Status== "Dead") %>% mutate(death_variabe=1)
+alives= df %>% filter(Status== "Alive") %>% mutate(death_variabe=0)
+all_member = rbind(dead,alives)
 all_smokers = all_member %>% filter(Smoker == "Yes")
 
-regression = glm(all_smokers$death_variabe~all_smokers$Age,family = binomial(link = logit))
-regression
+regression_smoker = glm(all_smokers$death_variabe~all_smokers$Age,family = binomial(link = logit))
 
-exp(cbind(coef(regression), confint(regression)))
+
+summary(regression_smoker)
+```
+```{r}
+all_non_smokers = all_member %>% filter(Smoker == "No")
+
+regression_non_smoker = glm(all_non_smokers$death_variabe~all_non_smokers$Age,family = binomial(link = logit))
+
+summary(regression_non_smoker)
+```
+```{r}
+ggplot(all_member)+
+  aes(x = Age) +
+  aes(y = death_variabe) +
+  aes(group = Smoker) +
+  stat_smooth( method="glm", se=TRUE, fullrange=TRUE, 
+              method.args = list(family=binomial), aes(color=Smoker, fill = Smoker)) +
+  ylab("Probabilité d'être morte") +
+  ggtitle("Evolution de la probabilité de décès avec l'âge initial des participantes")
 
 ```
 

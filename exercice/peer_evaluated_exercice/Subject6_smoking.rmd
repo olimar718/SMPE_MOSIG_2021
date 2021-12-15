@@ -13,9 +13,6 @@ library(ggplot2)
 library(Rmisc)
 ```
 
-# Introduction
-This work is not finished.
-
 
 # Question 1 
 
@@ -66,7 +63,7 @@ compute_confidence_interval_and_plot(smoker_arg="No",df_arg = df_arg, title_arg 
 
 }
 
-par(mfcol=c(2,4))
+par(mfcol=c(2,4),cex.axis=0.8)
 
 
 mortality_ratio_and_ci(class1834,"18 34 age class")
@@ -82,7 +79,6 @@ To figure out what is happening, we need more information. Currently, we have th
 An interesting information to have would be the ratio of smoker, especially in separate age class because we might find that people of different age have different smoking habit.
 I developed a function to compute to ratio of smoker.
 ```{r}
-# TODO confidence interval here as well ?
 compute_smoker_ratio <- function(df_arg, title_arg){
   smokers= df_arg %>% filter( Smoker== "Yes") %>% mutate(smoker_variable=1)
   non_smokers= df_arg %>% filter(Smoker== "No") %>% mutate(smoker_variable=0)
@@ -108,11 +104,14 @@ compute_smoker_ratio(df_arg = class64,title_arg = "Ratio of smoker 64 +" )
 It is immediately apparent that the oldest age class smokes much less than all the other age classes.
 
 Given this, I can give a tentative explanation of what is going on: 
-- Age is, as far as I know, the most important factor in increasing the probability of death, in the general population. 
-- People of older age are therefore, everything else being equal, much more likely to die.
 
-- In this study it is revealed that older people (in the 64 + age class), are much less likely to be smokers than the younger age classes.
-- However, due to their age, they are much more likely to die than the younger age classes.
+1. Age is, as far as I know, the most important factor in increasing the probability of death, in the general population. 
+
+2. People of older age are therefore, everything else being equal, much more likely to die.
+
+3. In this study it is revealed that older people (in the 64 + age class), are much less likely to be smokers than the younger age classes.
+
+4. However, due to their age, they are much more likely to die than the younger age classes.
 
 The age classes are not exactly the same size but they are all in the same order of magnitude.
 
@@ -143,18 +142,19 @@ regression_non_smoker = glm(all_non_smokers$death_variabe~all_non_smokers$Age,fa
 
 summary(regression_non_smoker)
 ```
+For both group the age is positively correlated with the probability of dying in the 20 years period of the study. In other words, the more the age of a person increases, the more likely it is that the person will die in the 20 year period.
+
 ```{r}
 ggplot(all_member)+
   aes(x = Age) +
   aes(y = death_variabe) +
   aes(group = Smoker) +
-  stat_smooth( method="glm", se=TRUE, fullrange=TRUE, 
+  stat_smooth( method="glm", se=TRUE, fullrange=TRUE,level=.95,
               method.args = list(family=binomial), aes(color=Smoker, fill = Smoker)) +
-  ylab("Probabilité d'être morte") +
-  ggtitle("Evolution de la probabilité de décès avec l'âge initial des participantes")
+  ylab("Probability of death") 
 
 ```
+As we have seen already, the age is positively correlated with the probability of dying, which is why we see this shape.
+Unfortunately, with this data we cannot give any kind of conclusion on the danger of smoking. Indeed it is standard in modern science to use a 5% $p-value$. In other words, to make the claim that smoking increases the probability of death, we would need the 95 % confidence interval to not overlap. However here the confidence interval overlap for every age. We could lower the confidence to 70 % and it would probably work but at this point we won't be very confident in what we say.
 
-
-
-# Conclusion
+Fortunately, the terrible impact of smoking on people health is already well established anyways.

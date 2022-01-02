@@ -1,0 +1,143 @@
+---
+title: "Design of experiment exercise"
+author: "Benjamin Cathelineau"
+date: "25/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# First approach
+The first approach is to assume that the underlying function is of the form $f(x1,x2,\dots,x11)=x1\times c1+x2\times c2+\dots+x1\times c11+intercept+noise=y$
+
+In that case, the best approach seems to figure out each of the of coefficient $(c1,c2,\dots,c11, intercept)$, individually.
+
+To do that, my approach was to set to $1$ the coefficient that I wanted to figure out and to $0$ all the others. To figure out the intercept, I set all the coefficients to $0$.
+
+
+
+ ```{sh}
+cat first_experiment.csv
+```
+
+The idea is to repeat this experiment multiple time to minimize the effect of $noise$ which is assumed to be random and uniform. I ran the experiment 8 times on the website and saved the result as a csv.
+```{r}
+library(dplyr)
+df =read.csv(file = "first_experiment_result.csv")
+```
+
+
+First, we figure out the intercept by using the experiments with all input set to 0.
+
+
+```{r}
+intercept_exp=df
+for (name in colnames(df)){
+  name= toString(name)
+  if(name != "y" && name != "Date"){
+    intercept_exp= intercept_exp %>% filter(intercept_exp[[name]]==0)
+  }
+}
+intercept=mean(intercept_exp$y)
+intercept
+```
+Then we figure each individual coefficient by using the intercept:
+
+```{r}
+for (name in colnames(df)){
+  name= toString(name)
+  if(name != "y" && name != "Date"){
+    coeff_exp= df %>% filter(df[[name]]==1)
+    print(paste(name,": ",mean(coeff_exp$y)-intercept))
+  }
+}
+
+```
+
+We can use a linear regression for a sanity check and we see that we obtain exactly the same result. This linear regression will also allow us to predict.
+
+
+
+
+```{r}
+form <- as.formula(paste("y~", paste0("x", 1:11, collapse="+")))
+reg=lm(form,data=df)
+reg
+```
+
+
+Now that we have a linear model, we can generate experiments to test it. We simply generate 10 set of 11 random number that we output to a csv file, so that we can copy paste it to the website. We fix a seed to avoid loosing our value by running the code multiple time.
+```{r}
+set.seed(1)
+new_random_experiment=t(runif(n=11))
+for (n in  1:9){
+  appendable=t(runif(n=11))
+  new_random_experiment=rbind(new_random_experiment,appendable)
+}
+write.table(x=new_random_experiment,file = "first_experiment_test.csv",row.names = FALSE,col.names = FALSE,sep = ",")
+```
+
+Before even going to the website, we will now try to use our model to predict $y$.
+
+Here are our experiments:
+```{r}
+new_random_experiment
+colnames(new_random_experiment) <- c("x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11")
+```
+
+Now let's get the prediction from our model :
+
+```{r}
+for (n in 1:10){
+  print(predict(object = reg,newdata=as.list(new_random_experiment[n,])))
+}
+```
+
+Now we can try running the experiment on the website to see if we get similar results. We save the result as a csv file to keep it for later
+
+```{r}
+read.csv(file = "first_experiment_test_results.csv")
+```
+
+We immediately see that most of our prediction are completely of the mark.
+
+This is not surprising as, I asked the professor *Arnaud Legrand* on Mattermost and he told me that, while this was a decent first approach, the underlying function was *not* actually of the form $f(x1,x2,\dots,x11)=x1\times c1+x2\times c2+\dots+x1\times c11+intercept+noise=y$
+
+# Second approach
+In my opinion we can use the results of the first experiment for the coefficient that have no effect, especially if we remember that *Arnaud Legrand* gave us the hint that some coefficient (ie some inputs) don't really affect the output. In fact, from the original experiment, it seems that only 3 coefficient matters^[in the meaning that they change the output significantly, ie more that $10^{-2}$] ($x1,x4,x9$)
+
+This is risky, because theses coefficient that seem to not change the output ($x2,x3,x5,x6,x7,x8,x10,x11$) according to the first design, may actually change the output in a complex way that we do not yet see. Nonetheless this would greatly increase the efficiency of the experiment if the assumption is correct.
+
+I am willing to take that risk.
+
+
+First, instead of the completely non randomized design that I had before, I'm now going to use the *Latin Hyper Square* design presented in class. After a lengthy process to install the library, I just slightly modified the code to adapt it to the current problem.
+```{r}
+library(DoE.wrapper);   set.seed(42);
+d5_HD = lhs.design( type= "maximin" , nruns= 100 ,nfactors= 11,
+    seed= 42 , factor.names=list( x1=c(0,1),x2=c(0,0),x3=c(0,0),x4=c(0,1),x5=c(0,0),x6=c(0,0),x7=c(0,0),x8=c(0,0),x9=c(0,1),x10=c(0,0),x11=c(0,0) ) )
+
+ 
+d5_HD[is.na(d5_HD)] <- 0
+write.table(x=d5_HD,file = "second_experiment.csv",row.names = FALSE,col.names = FALSE,sep = ",")
+```
+
+Now I run those experiment on the website and get the results
+
+```{r}
+library(dplyr)
+df =read.csv(file = "second_experiment_results.csv")
+```
+
+```{r}
+reg=lm(y~x1+x4+x9,data=df)
+reg
+```
+
+```{r}
+for (n in 1:10){
+  print(predict(object = reg,newdata=as.list(new_random_experiment[n,])))
+}
+```

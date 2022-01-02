@@ -98,7 +98,8 @@ for (n in 1:10){
 Now we can try running the experiment on the website to see if we get similar results. We save the result as a csv file to keep it for later
 
 ```{r}
-read.csv(file = "first_experiment_test_results.csv")
+first_experiment_results=read.csv(file = "first_experiment_test_results.csv")
+first_experiment_results
 ```
 
 We immediately see that most of our prediction are completely of the mark.
@@ -132,12 +133,17 @@ df =read.csv(file = "second_experiment_results.csv")
 ```
 
 ```{r}
-reg=lm(y~x1+x4+x9,data=df)
-reg
+newreg=lm(y~x1+x4+x9,data=df)
+newreg
 ```
-
+TODO
 ```{r}
 for (n in 1:10){
-  print(predict(object = reg,newdata=as.list(new_random_experiment[n,])))
+  prediction=predict(object = newreg,newdata=as.list(new_random_experiment[n,]))
+  error=abs(prediction-first_experiment_results$y[n])
+  paste("prediction: ",prediction, ", Actual value: ",first_experiment_results$y[n],", Error: ",error)
+  print(error)
+  print(new_random_experiment)
+  #print(prediction)
 }
 ```

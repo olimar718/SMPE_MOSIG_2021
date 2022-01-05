@@ -18,7 +18,7 @@ To do that, my approach was to set to $1$ the coefficient that I wanted to figur
 
 
 
- ```{sh}
+```{sh}
 cat first_experiment.csv
 ```
 
@@ -58,9 +58,6 @@ for (name in colnames(df)){
 
 We can use a linear regression for a sanity check and we see that we obtain exactly the same result. This linear regression will also allow us to predict.
 
-
-
-
 ```{r}
 form <- as.formula(paste("y~", paste0("x", 1:11, collapse="+")))
 reg=lm(form,data=df)
@@ -83,8 +80,8 @@ Before even going to the website, we will now try to use our model to predict $y
 
 Here are our experiments:
 ```{r}
-new_random_experiment
 colnames(new_random_experiment) <- c("x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11")
+new_random_experiment
 ```
 
 Now let's get the prediction from our model :
@@ -95,7 +92,7 @@ for (n in 1:10){
 }
 ```
 
-Now we can try running the experiment on the website to see if we get similar results. We save the result as a csv file to keep it for later
+Now we can try running the experiment on the website to see if we get similar results. We save the result as a csv file to keep it for later.
 
 ```{r}
 first_experiment_results=read.csv(file = "first_experiment_test_results.csv")
@@ -103,10 +100,34 @@ first_experiment_results
 ```
 
 We immediately see that most of our prediction are completely of the mark.
+We can compare them with the actual result, and make an average of the error:
+
+```{r}
+compare_prediction <- function(amount_experiment,model,data,result){
+
+error_sum=0
+for (n in 1:amount_experiment){
+  prediction=predict(object = model,newdata=as.list(data[n,]))
+  error=prediction-result$y[n]
+  error_sum=error_sum+  abs(error)
+  print(paste("prediction: ",prediction, ", Actual value: ",result$y[n],", Error: ",error))
+
+}
+error_sum/10
+}
+```
+
+```{r}
+compare_prediction(amount_experiment = 10,model = reg, data = new_random_experiment,result = first_experiment_results)
+```
+
+
 
 This is not surprising as, I asked the professor *Arnaud Legrand* on Mattermost and he told me that, while this was a decent first approach, the underlying function was *not* actually of the form $f(x1,x2,\dots,x11)=x1\times c1+x2\times c2+\dots+x1\times c11+intercept+noise=y$
 
 # Second approach
+
+## Eliminate some coefficient
 In my opinion we can use the results of the first experiment for the coefficient that have no effect, especially if we remember that *Arnaud Legrand* gave us the hint that some coefficient (ie some inputs) don't really affect the output. In fact, from the original experiment, it seems that only 3 coefficient matters^[in the meaning that they change the output significantly, ie more that $10^{-2}$] ($x1,x4,x9$)
 
 This is risky, because theses coefficient that seem to not change the output ($x2,x3,x5,x6,x7,x8,x10,x11$) according to the first design, may actually change the output in a complex way that we do not yet see. Nonetheless this would greatly increase the efficiency of the experiment if the assumption is correct.
@@ -125,7 +146,7 @@ d5_HD[is.na(d5_HD)] <- 0
 write.table(x=d5_HD,file = "second_experiment.csv",row.names = FALSE,col.names = FALSE,sep = ",")
 ```
 
-Now I run those experiment on the website and get the results
+Now I run those experiment on the website and get the results:
 
 ```{r}
 library(dplyr)
@@ -136,14 +157,85 @@ df =read.csv(file = "second_experiment_results.csv")
 newreg=lm(y~x1+x4+x9,data=df)
 newreg
 ```
-TODO
+
+I then run the prediction and compare them against the actual value:
 ```{r}
-for (n in 1:10){
-  prediction=predict(object = newreg,newdata=as.list(new_random_experiment[n,]))
-  error=abs(prediction-first_experiment_results$y[n])
-  paste("prediction: ",prediction, ", Actual value: ",first_experiment_results$y[n],", Error: ",error)
-  print(error)
-  print(new_random_experiment)
-  #print(prediction)
-}
+compare_prediction(amount_experiment = 10,model = newreg,data = new_random_experiment,result = first_experiment_results)
 ```
+The average error is $0.28$. This is isn't perfect but it's a start, and it's $\approx 2$ times better than the previous approach. 
+
+## Remove x4
+For some reason, the average error is slightly lower when we remove $x4$.
+```{r}
+newreg3=lm(y~x1+x9,data=df)
+newreg3
+```
+
+```{r}
+compare_prediction(amount_experiment = 10,model = newreg3,data = new_random_experiment,result = first_experiment_results)
+```
+## Try with all coefficients
+
+We redo a experiment design, this time with all the coefficient
+```{r}
+library(DoE.wrapper);   set.seed(42);
+d5_HD = lhs.design( type= "maximin" , nruns= 100 ,nfactors= 11,
+    seed= 42 , factor.names=list( x1=c(0,1),x2=c(0,1),x3=c(0,1),x4=c(0,1),x5=c(0,1),x6=c(0,1),x7=c(0,1),x8=c(0,1),x9=c(0,1),x10=c(0,1),x11=c(0,1) ) )
+
+ 
+d5_HD[is.na(d5_HD)] <- 0
+write.table(x=d5_HD,file = "third_experiment.csv",row.names = FALSE,col.names = FALSE,sep = ",")
+```
+
+```{r}
+library(dplyr)
+df =read.csv(file = "third_experiment_results.csv")
+```
+
+
+
+```{r}
+newreg2=lm(form,data=df)
+newreg2
+```
+
+```{r}
+compare_prediction(amount_experiment = 10,model = newreg2,data = new_random_experiment,result = first_experiment_results)
+```
+The average error is barely better than the  $x1+x4+x9$ model, but worse than the $x1+x9$ model...
+
+## Step reg model
+I remembered the bat exercise and decided to try to use the `step` command.
+```{r}
+reg0=lm(y~1,data = df)
+stepreg= step(reg0,scope = form, direction = "forward")
+summary(stepreg)
+```
+
+Notice that it does land on a $x9+x4+x1$.
+
+Let's test this model:
+
+```{r}
+compare_prediction(amount_experiment = 10,model = stepreg,data = new_random_experiment,result = first_experiment_results)
+
+```
+It's worse than the $x1+x9$ model... :(.
+
+## Final attempt: step without x4
+$x4$ is suspicious.
+```{r}
+reg0=lm(y~1,data = df)
+stepreg2= step(reg0,scope = y~x1+x2+x3+x5+x6+x7+x8+x9+x10+x11, direction = "forward")
+summary(stepreg2)
+```
+
+```{r}
+compare_prediction(amount_experiment = 10,model = stepreg2,data = new_random_experiment,result = first_experiment_results)
+
+```
+Slightly better...
+
+# Third approach
+
+??

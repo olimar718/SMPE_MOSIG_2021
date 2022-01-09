@@ -191,6 +191,9 @@ write.table(x=d5_HD,file = "third_experiment.csv",row.names = FALSE,col.names = 
 library(dplyr)
 df =read.csv(file = "third_experiment_results.csv")
 ```
+```{r}
+plot(df$x9,df$y)
+```
 
 
 
@@ -222,7 +225,7 @@ compare_prediction(amount_experiment = 10,model = stepreg,data = new_random_expe
 ```
 It's worse than the $x1+x9$ model... :(.
 
-## Final attempt: step without x4
+## step without x4
 $x4$ is suspicious.
 ```{r}
 reg0=lm(y~1,data = df)
@@ -414,3 +417,6 @@ curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
 curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
 ```
 The optimal value of $x1$ is around $0.6$
+
+## With the shiny app
+With the shiny app I found an optimal value for $x1$ of around $0.74$, $x4$ of around $1$ and $x9$ of $0$

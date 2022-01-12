@@ -239,8 +239,10 @@ compare_prediction(amount_experiment = 10,model = stepreg2,data = new_random_exp
 ```
 Slightly better...
 
-#Third approach : polynomial regression
+# Third approach : polynomial regression
 Inspired by the hints of Arnaud Legrand, I guessed that the output was actually influenced by a polynomial of $x1$. 
+
+After testing different option i found that the best for $x1$ polynomial was $x1+x1^2+x1^3=$ :
 
 ```{r}
 x1polreg=lm(formula = y ~ x1 + I(x1^2) + I(x1^3),data = df)
@@ -253,7 +255,7 @@ with(newdat, lines(x = x1, y = pred))
 ```
 It looks very good graphically.
 
-Now for the classical test
+Now for the classical test that I did before.
 ```{r}
 polreg=lm( y ~ x1 + I(x1^2) + I(x1^3)+x4+x9,data = df)
 ```
@@ -262,161 +264,6 @@ polreg=lm( y ~ x1 + I(x1^2) + I(x1^3)+x4+x9,data = df)
 compare_prediction(amount_experiment = 10,model = polreg,data = new_random_experiment,result = first_experiment_results)
 ```
 This is a bit less than $\approx$ twice better (in term of average error) than the previously best model. Nice !
-
-# Fourth approach : Gaussian process
-
-
-The goal is now to maximize the value of $y$.
-We know^[we can't really be 100 % sure but...] from the previous experiment that only $x1,x4,x9$ 
-
-```{r}
-#inspired by https://cran.r-project.org/web/packages/GauPro/vignettes/GauPro.html
-library(GauPro)
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-First we see that the Gaussian regression is being drawn with our existing data
-
-### Applying the gaussian process from the start
-
-### First iteration
-```{r}
-library(GauPro)
-set.seed(23)
-exp=runif(1)
-zeroes=",0,0,0,0,0,0,0,0,0,0"
-paste(exp,zeroes ,sep = "")
-```
-*run the experiment on the website*
-
-```{r}
-
-df = data.frame(x1=exp,y=2.01682006893946)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-
-### Iteration 2
-Still take uniform because
-```{r}
-exp=runif(1)
-paste(exp,zeroes ,sep = "")
-
-```
-Run on the website
-```{r}
-
-dfnew = data.frame(x1=exp,y=1.10407525260443)
-df = rbind(df,dfnew)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-### Iteration 3
-This time we take the visually highest confidence interval (it's hard to tell where it is ), so we follow the algorithm
-```{r}
-exp=0.4
-paste(exp,zeroes ,sep = "")
-
-```
-Run on the website
-```{r}
-
-dfnew = data.frame(x1=exp,y=1.35960882383993)
-df = rbind(df,dfnew)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-#Iteration 4
-This time we explore at 1.0 (just to make sure to see the whole range of input)
-```{r}
-exp=1.0
-paste(exp,zeroes ,sep = "")
-
-```
-Run on the website
-```{r}
-
-dfnew = data.frame(x1=exp,y=0.423569793078973)
-df = rbind(df,dfnew)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-#Iteration 5
-This time we explore at 0.0 (just to make sure to see the whole range of input)
-```{r}
-exp=0.0
-paste(exp,zeroes ,sep = "")
-
-```
-Run on the website
-```{r}
-
-dfnew = data.frame(x1=exp,y=1.01524582045845)
-df = rbind(df,dfnew)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-#Iteration 6
-This time we explore at 0.6 (Following the algorithm by going to the highest confidence interval)
-```{r}
-exp=0.6
-paste(exp,zeroes ,sep = "")
-
-```
-Run on the website
-```{r}
-
-dfnew = data.frame(x1=exp,y=2.14170035853349)
-df = rbind(df,dfnew)
-```
-
-```{r}
-
-gp <- GauPro(df$x1,df$y)
-plot(df$x1,df$y)
-curve(gp$predict(x), add=T, col=2)
-curve(gp$predict(x)+2*gp$predict(x, se=T)$se, add=T, col=4)
-curve(gp$predict(x)-2*gp$predict(x, se=T)$se, add=T, col=4)
-```
-The optimal value of $x1$ is around $0.6$
 
 ## With the shiny app
 With the shiny app I found an optimal value for $x1$ of around $0.74$, $x4$ of around $1$ and $x9$ of $0$
